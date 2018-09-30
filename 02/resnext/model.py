@@ -54,13 +54,13 @@ class ResNeXt(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        self.layer1 = self._make_layer(block, 64, layers[0], cardinality=cardinality),
-        self.layer2 = self._make_layer(block, 128, layers[1], cardinality=cardinality, stride=2),
-        self.layer3 = self._make_layer(block, 256, layers[2], cardinality=cardinality, stride=2),
+        self.layer1 = self._make_layer(block, 64, layers[0], cardinality=cardinality)
+        self.layer2 = self._make_layer(block, 128, layers[1], cardinality=cardinality, stride=2)
+        self.layer3 = self._make_layer(block, 256, layers[2], cardinality=cardinality, stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], cardinality=cardinality, stride=2)
 
         self.avgpool = nn.AvgPool2d(7, stride=1)
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = nn.Linear(self.last_channels * block.expansion, num_classes)
 
     def _make_layer(self, block, channels, blocks, cardinality, stride=1):
         downsample = None
