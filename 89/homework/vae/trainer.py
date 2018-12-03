@@ -1,15 +1,15 @@
 import logging
 import os
 
+import math
 import torch
 import torchvision.utils as vutils
 from tensorboardX import SummaryWriter
 
 
-class Trainer:
-
+class VAETrainer:
     def __init__(self, model, train_loader, test_loader, optimizer,
-                 loss_function, device='cpu'):
+                 loss_function, device=torch.device('cpu')):
         self.model = model
         self.train_loader = train_loader
         self.test_loader = test_loader
@@ -23,8 +23,9 @@ class Trainer:
         epoch_loss = 0
 
         for batch_idx, (data, _) in enumerate(self.train_loader):
-            # TODO your code here
-            train_loss = None
+            data.to(self.device)
+            data_recon, mu, logvar = self.model.forward(data)
+            train_loss = self.loss_function(data_recon, data, mu, logvar)
             epoch_loss += train_loss
             norm_train_loss = train_loss / len(data)
 
@@ -55,9 +56,9 @@ class Trainer:
         test_epoch_loss = 0
 
         for batch_idx, (data, _) in enumerate(self.test_loader):
-            # TODO your code here
-
-            test_loss = None
+            data.to(self.device)
+            data_recon, mu, logvar = self.model.forward(data)
+            test_loss = self.loss_function(data_recon, data, mu, logvar)
             test_epoch_loss += test_loss
 
             if batch_idx % log_interval == 0:
@@ -73,16 +74,20 @@ class Trainer:
                                        scalar_value=test_loss / len(data),
                                        global_step=batches_per_epoch_test * (epoch - 1) + batch_idx)
 
+                self.plot_generated(data, 'actual', epoch)
+                self.plot_generated(data_recon, 'recon', epoch)
+
         test_epoch_loss /= len(self.test_loader.dataset)
         logging.info('====> Test set loss: {:.4f}'.format(test_epoch_loss))
         self.writer.add_scalar(tag='data/test_epoch_loss',
                                scalar_value=test_epoch_loss,
                                global_step=epoch)
-        self.plot_generated(epoch, batch_size)
 
-    def plot_generated(self, epoch, batch_size):
-        # TODO your code here
-        pass
+
+    def plot_generated(self, images, label, epoch):
+        grid = vutils.make_grid(images, normalize=True, scale_each=True)
+        print(grid)
+        self.writer.add_image("imgs/{}".format(label), grid, epoch)
 
     def save(self, checkpoint_path):
         dir_name = os.path.dirname(checkpoint_path)
